@@ -21,6 +21,7 @@ type Client struct {
 	*http.Client
 }
 
+// NewClient creates a new HTTPS client.
 func NewClient() *Client {
 	tlsConfig := tls.Config{
 		CurvePreferences: []tls.CurveID{
@@ -85,6 +86,7 @@ func (c *Client) PostForm(url string, data url.Values) (resp *http.Response, err
 	return c.Post(url, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
 }
 
+// Head overrides http.Head.
 func (c *Client) Head(url string) (resp *http.Response, err error) {
 	req, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {

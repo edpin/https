@@ -81,7 +81,7 @@ func (c *Client) Post(url string, bodyType string, body io.Reader) (resp *http.R
 	return c.Do(req)
 }
 
-// PostFrom overrides http.PostFrom.
+// PostForm overrides http.PostForm.
 func (c *Client) PostForm(url string, data url.Values) (resp *http.Response, err error) {
 	return c.Post(url, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
 }

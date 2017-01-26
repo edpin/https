@@ -25,6 +25,7 @@ type Client struct {
 func NewClient() *Client {
 	tlsConfig := tls.Config{
 		CurvePreferences: []tls.CurveID{
+			tls.X25519,  // requires go 1.8
 			tls.CurveP521,
 			tls.CurveP384,
 			tls.CurveP256,
@@ -32,6 +33,7 @@ func NewClient() *Client {
 		// Prefer this order of ciphers.
 		CipherSuites: []uint16{
 			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305, // go 1.8
 			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 			// required by HTTP-2.
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,

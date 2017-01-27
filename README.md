@@ -21,22 +21,22 @@ resp, err := client.Get("https://example.com")
 To start a new HTTPS server:
 
 ```
-    // Register some handlers:
-    mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	    w.Write("Hello world")
-	})
+// Register some handlers:
+mux := http.NewServeMux()
+mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+    w.Write("Hello world")
+})
 
-    // Secure it with a TLS certificate using Let's  Encrypt:
-	m := autocert.Manager{
-		Prompt:     autocert.AcceptTOS,
-		Cache:      autocert.DirCache("/etc/acme-cache/"),
-		Email:      "me@example.com",
-		HostPolicy: autocert.HostWhitelist("example.com"),
-	}
+// Secure it with a TLS certificate using Let's  Encrypt:
+m := autocert.Manager{
+	Prompt:     autocert.AcceptTOS,
+	Cache:      autocert.DirCache("/etc/acme-cache/"),
+	Email:      "me@example.com",
+	HostPolicy: autocert.HostWhitelist("example.com"),
+}
 
-	// Start a secure server:
-	https.StartSecureServer(mux, m.GetCertificate)
+// Start a secure server:
+https.StartSecureServer(mux, m.GetCertificate)
 ```
 
 TODOs

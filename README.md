@@ -19,6 +19,8 @@ resp, err := client.Get("https://example.com")
 ```
 
 To start a new HTTPS server:
+
+```
     // Register some handlers:
     mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -35,6 +37,7 @@ To start a new HTTPS server:
 
 	// Start a secure server:
 	https.StartSecureServer(mux, m.GetCertificate)
+```
 
 TODOs
 

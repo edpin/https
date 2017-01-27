@@ -10,7 +10,7 @@ ciphers and encourages the use of stronger elliptic-curves first. It also
 ensures that requests are always HTTPS and they never get redirected to plain
 HTTP.
 
-To instantiate a new https.Client:
+To instantiate a new HTTPS client:
 
 ```
 client := https.NewClient()
@@ -18,10 +18,27 @@ client := https.NewClient()
 resp, err := client.Get("https://example.com")
 ```
 
+To start a new HTTPS server:
+    // Register some handlers:
+    mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	    w.Write("Hello world")
+	})
+
+    // Secure it with a TLS certificate using Let's  Encrypt:
+	m := autocert.Manager{
+		Prompt:     autocert.AcceptTOS,
+		Cache:      autocert.DirCache("/etc/acme-cache/"),
+		Email:      "me@example.com",
+		HostPolicy: autocert.HostWhitelist("example.com"),
+	}
+
+	// Start a secure server:
+	https.StartSecureServer(mux, m.GetCertificate)
+
 TODOs
 
-1. add similar wrapper for the server side.
-2. provide a list of trustworthy root CAs (with proven certificate transparency
+1. provide a list of trustworthy root CAs (with proven certificate transparency
 logs).
 
 

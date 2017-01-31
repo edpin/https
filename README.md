@@ -24,7 +24,7 @@ To start a new HTTPS server:
 // Register some handlers:
 mux := http.NewServeMux()
 mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-    w.Write("Hello world")
+    w.Write([]byte("Hello world"))
 })
 
 // Secure it with a TLS certificate using Let's  Encrypt:

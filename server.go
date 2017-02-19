@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"crypto/tls"
 	"time"
+	"strings"
 )
 
 // StartSecureServer starts an HTTPS server with a mux and a getCertificate
@@ -70,6 +71,6 @@ func NewHSTS(mux *http.ServeMux) http.Handler {
 
 // ServeHTTP implements http.Handler.
 func (h htstMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Strict-Transport-Security", "max-age=86400; includeSubDomains")
+	w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 	h.ServeMux.ServeHTTP(w, r)
 }

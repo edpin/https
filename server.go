@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"crypto/tls"
 	"time"
-	"strings"
 )
 
 // StartSecureServer starts an HTTPS server with a mux and a getCertificate

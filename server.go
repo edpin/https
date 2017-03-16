@@ -5,9 +5,9 @@
 package https
 
 import (
+	"crypto/tls"
 	"log"
 	"net/http"
-	"crypto/tls"
 	"time"
 )
 
@@ -19,15 +19,39 @@ import (
 // StartSecureServer also starts an HTTP server that redirects all requests to
 // their HTTPS counterpart and immediately terminates all connections.
 func StartSecureServer(mux *http.ServeMux, getCertificate func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error)) {
-	s := &http.Server{
-		Addr:         ":https",
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  120 * time.Second,
-		Handler:      NewHSTS(mux),
+	s := NewSecureServer()
+	s.TLSConfig.GetCertificate = getCertificate
+	go func() {
+		// Redirect regular HTTP requests to HTTPS.
+		insecure := &http.Server{
+			ReadTimeout:  5 * time.Second,
+			WriteTimeout: 5 * time.Second,
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.Header().Set("Connection", "close")
+				url := "https://" + req.Host + req.URL.String()
+				http.Redirect(w, req, url, http.StatusMovedPermanently)
+			}),
+		}
+		log.Fatal(insecure.ListenAndServe())
+	}()
+	log.Fatal(s.ListenAndServeTLS("", ""))
+}
+
+type htstMux struct {
+	*http.ServeMux
+}
+
+// NewSecureServer returns a new HTTP server with strict security settings.
+func NewSecureServer() *http.Server {
+	return &http.Server{
+		Addr:              ":https",
+		ReadTimeout:       5 * time.Second,
+		ReadHeaderTimeout: 1 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       120 * time.Second,
 		TLSConfig: &tls.Config{
-			GetCertificate: getCertificate,
-			MinVersion:     tls.VersionTLS12,
+			ClientSessionCache: tls.NewLRUClientSessionCache(0),
+			MinVersion:         tls.VersionTLS12,
 			CurvePreferences: []tls.CurveID{
 				tls.X25519, // requires go 1.8
 				tls.CurveP521,
@@ -43,22 +67,6 @@ func StartSecureServer(mux *http.ServeMux, getCertificate func(clientHello *tls.
 			},
 		},
 	}
-	// Redirect regular HTTP requests to HTTPS.
-	insecure := &http.Server{
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			w.Header().Set("Connection", "close")
-			url := "https://" + req.Host + req.URL.String()
-			http.Redirect(w, req, url, http.StatusMovedPermanently)
-		}),
-	}
-	go func() { log.Fatal(insecure.ListenAndServe()) }()
-	log.Fatal(s.ListenAndServeTLS("", ""))
-}
-
-type htstMux struct {
-	*http.ServeMux
 }
 
 // NewHSTS returns an HTTP handler that sets HSTS headers on all requests.

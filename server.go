@@ -21,6 +21,7 @@ import (
 func StartSecureServer(mux *http.ServeMux, getCertificate func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error)) {
 	s := NewSecureServer()
 	s.TLSConfig.GetCertificate = getCertificate
+	s.Handler = NewHSTS(mux)
 	go func() {
 		// Redirect regular HTTP requests to HTTPS.
 		insecure := &http.Server{

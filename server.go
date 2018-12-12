@@ -6,21 +6,19 @@ package https
 
 import (
 	"crypto/tls"
+	"golang.org/x/crypto/acme/autocert"
 	"log"
 	"net/http"
 	"time"
 )
 
-// StartSecureServer starts an HTTPS server with a mux and a getCertificate
-// function, which may be nil. Typically getCertificate will come from
-// autocert.Manager, from package acme/autocert. The HTTPS server started
-// enables HTST by default to ensure maximum protection (see
-// https://www.owasp.org/index.php/HTTP_Strict_Transport_Security_Cheat_Sheet).
+// StartSecureServer starts an HTTPS server with a mux and an autocert manager.
+// The HTTPS server started enables HTST by default to ensure maximum protection
+// (see https://www.owasp.org/index.php/HTTP_Strict_Transport_Security_Cheat_Sheet).
 // StartSecureServer also starts an HTTP server that redirects all requests to
 // their HTTPS counterpart and immediately terminates all connections.
-func StartSecureServer(mux *http.ServeMux, getCertificate func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error)) {
-	s := NewSecureServer()
-	s.TLSConfig.GetCertificate = getCertificate
+func StartSecureServer(mux *http.ServeMux, m *autocert.Manager) {
+	s := NewSecureServer(m)
 	s.Handler = NewHSTS(mux)
 	go func() {
 		// Redirect regular HTTP requests to HTTPS.
@@ -43,30 +41,31 @@ type htstMux struct {
 }
 
 // NewSecureServer returns a new HTTP server with strict security settings.
-func NewSecureServer() *http.Server {
+func NewSecureServer(m *autocert.Manager) *http.Server {
+	t := m.TLSConfig()
+	t.ClientSessionCache = tls.NewLRUClientSessionCache(0)
+	t.MinVersion = tls.VersionTLS12
+	t.CurvePreferences = []tls.CurveID{
+		tls.X25519, // requires go 1.8
+		tls.CurveP521,
+		tls.CurveP384,
+		tls.CurveP256,
+	}
+	// Prefer this order of ciphers.
+	t.CipherSuites = []uint16{
+		tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+		tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+		// required by HTTP-2.
+		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+	}
+
 	return &http.Server{
 		Addr:              ":https",
 		ReadTimeout:       5 * time.Second,
 		ReadHeaderTimeout: 1 * time.Second,
 		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       120 * time.Second,
-		TLSConfig: &tls.Config{
-			ClientSessionCache: tls.NewLRUClientSessionCache(0),
-			MinVersion:         tls.VersionTLS12,
-			CurvePreferences: []tls.CurveID{
-				tls.X25519, // requires go 1.8
-				tls.CurveP521,
-				tls.CurveP384,
-				tls.CurveP256,
-			},
-			// Prefer this order of ciphers.
-			CipherSuites: []uint16{
-				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-				// required by HTTP-2.
-				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-			},
-		},
+		TLSConfig:         t,
 	}
 }
 

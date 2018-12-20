@@ -12,14 +12,15 @@ import (
 	"time"
 )
 
-// StartSecureServer starts an HTTPS server with a mux and an autocert manager.
-// The HTTPS server started enables HTST by default to ensure maximum protection
-// (see https://www.owasp.org/index.php/HTTP_Strict_Transport_Security_Cheat_Sheet).
+// StartSecureServer starts an HTTPS server with a Handler and an autocert
+// manager. The HTTPS server started enables HTST by default to ensure maximum
+// protection (see
+// https://www.owasp.org/index.php/HTTP_Strict_Transport_Security_Cheat_Sheet).
 // StartSecureServer also starts an HTTP server that redirects all requests to
 // their HTTPS counterpart and immediately terminates all connections.
-func StartSecureServer(mux *http.ServeMux, m *autocert.Manager) {
+func StartSecureServer(h http.Handler, m *autocert.Manager) {
 	s := NewSecureServer(m)
-	s.Handler = NewHSTS(mux)
+	s.Handler = NewHSTS(h)
 	go func() {
 		// Redirect regular HTTP requests to HTTPS.
 		insecure := &http.Server{
@@ -36,8 +37,8 @@ func StartSecureServer(mux *http.ServeMux, m *autocert.Manager) {
 	log.Fatal(s.ListenAndServeTLS("", ""))
 }
 
-type htstMux struct {
-	*http.ServeMux
+type hstsHandler struct {
+	http.Handler
 }
 
 // NewSecureServer returns a new HTTP server with strict security settings.
@@ -70,14 +71,14 @@ func NewSecureServer(m *autocert.Manager) *http.Server {
 }
 
 // NewHSTS returns an HTTP handler that sets HSTS headers on all requests.
-func NewHSTS(mux *http.ServeMux) http.Handler {
-	return htstMux{
-		ServeMux: mux,
+func NewHSTS(h http.Handler) http.Handler {
+	return hstsHandler{
+		h,
 	}
 }
 
 // ServeHTTP implements http.Handler.
-func (h htstMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h hstsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-	h.ServeMux.ServeHTTP(w, r)
+	h.ServeHTTP(w, r)
 }

@@ -38,7 +38,7 @@ func StartSecureServer(h http.Handler, m *autocert.Manager) {
 }
 
 type hstsHandler struct {
-	http.Handler
+	h http.Handler
 }
 
 // NewSecureServer returns a new HTTP server with strict security settings.
@@ -73,12 +73,12 @@ func NewSecureServer(m *autocert.Manager) *http.Server {
 // NewHSTS returns an HTTP handler that sets HSTS headers on all requests.
 func NewHSTS(h http.Handler) http.Handler {
 	return hstsHandler{
-		h,
+		h: h,
 	}
 }
 
 // ServeHTTP implements http.Handler.
 func (h hstsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-	h.ServeHTTP(w, r)
+	h.h.ServeHTTP(w, r)
 }

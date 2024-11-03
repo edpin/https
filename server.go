@@ -6,10 +6,11 @@ package https
 
 import (
 	"crypto/tls"
-	"golang.org/x/crypto/acme/autocert"
 	"log"
 	"net/http"
 	"time"
+
+	"golang.org/x/crypto/acme/autocert"
 )
 
 // StartSecureServer starts an HTTPS server with a Handler and an autocert
@@ -47,17 +48,10 @@ func NewSecureServer(m *autocert.Manager) *http.Server {
 	t.ClientSessionCache = tls.NewLRUClientSessionCache(0)
 	t.MinVersion = tls.VersionTLS12
 	t.CurvePreferences = []tls.CurveID{
-		tls.X25519, // requires go 1.8
+		tls.X25519,
 		tls.CurveP521,
 		tls.CurveP384,
 		tls.CurveP256,
-	}
-	// Prefer this order of ciphers.
-	t.CipherSuites = []uint16{
-		tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-		tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-		// required by HTTP-2.
-		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 	}
 
 	return &http.Server{
